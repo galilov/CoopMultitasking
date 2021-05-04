@@ -36,6 +36,17 @@ Example:
                 std::cout << static_cast<const char*>(data) << std::endl;
                 std::cout << "End T3" << std::endl;
         }
+        
+        int main()
+        {
+                // Enqueue tasks
+                TaskManager::addTask(t1, (void*)"Hello from task1", "t1");
+                TaskManager::addTask(t2, (void*)"Hi there!", "t2");
+                TaskManager::addTask(t3, (void*)"Task 3 is here", "t3");
+                // run
+                TaskManager::start();
+                return 0;
+        }
 ```
 ## Output
 ```
