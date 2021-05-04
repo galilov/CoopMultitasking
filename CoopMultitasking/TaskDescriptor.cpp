@@ -25,7 +25,7 @@ TaskDescriptor::TaskDescriptor(void(__stdcall* task)(void*), void* data, const c
 	_stack.resize(stackSize);
 	for (auto& elem : _stack)
 	{
-		elem = static_cast<MemAddr>(0xdeadbeeff00dULL); // for debug
+		elem = static_cast<MemAddr>(0xdeadbeeff00dULL); // DeadBeefFood for debug
 	}
 	_stackPointer = lowLevelEnqueueTask(task, data, &_stack[0] + _stack.size());
 }

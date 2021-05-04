@@ -4,6 +4,6 @@
 
 namespace TaskManager
 {
-	void addTask(void (*task)(void*), void* data, const char* name);
+	void addTask(void (__stdcall *task)(void*), void* data, const char* name);
 	void start();
 }

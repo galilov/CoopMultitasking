@@ -44,7 +44,7 @@ namespace TaskManager {
 		// Run the first task from MAIN stack context.
 		// The stack will be switched to a local task-related stack.
 		yield();
-		std::cout << "Completed\n"; 
+		//std::cout << "Completed\n"; 
 	}
 }
 
@@ -56,17 +56,16 @@ static MemAddr* _mainSp = nullptr;
 void __stdcall onTaskFinished()
 {
 	using namespace TaskManager;
-	//size_t n = _activeTasks.size();
-	bool finished = false;
 	auto* sp = lowLevelGetCurrentStack();
 	if ((*_it)->isOwnerOfStack(sp))
 	{
-		// 
+		// Avoid of auto-destruction the TaskDescriptor by saving it to
+		// _finishedTasks list. We need its stack data block to complete
+		// current function correctly.
 		_finishedTasks.push_back(*_it);
 		_it = _activeTasks.erase(_it);
-		finished = true;
 	}
-	if (!finished || _activeTasks.empty())
+	if (_activeTasks.empty())
 	{
 		// Final completion using saved MAIN stack pointer
 		_it = _activeTasks.begin();
