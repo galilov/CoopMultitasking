@@ -22,7 +22,8 @@
 void  __stdcall t1(void* data)
 {
 	std::cout << "Start T1" << std::endl;
-	for (auto i = 0; i < 10; i++)
+	std::cout << static_cast<const char*>(data) << std::endl;
+	for (auto i = 0; i < 6; i++)
 	{
 		std::cout << "In T1 " << i << std::endl;
 		yield();
@@ -33,6 +34,7 @@ void  __stdcall t1(void* data)
 void  __stdcall t2(void* data)
 {
 	std::cout << "Start T2" << std::endl;
+	std::cout << static_cast<const char*>(data) << std::endl;
 	for (auto i = 0; i < 5; i++)
 	{
 		std::cout << "In T2 " << i << std::endl;
@@ -45,6 +47,7 @@ void  __stdcall t3(void* data)
 {
 	std::cout << "Start T3" << std::endl;
 	yield();
+	std::cout << static_cast<const char*>(data) << std::endl;
 	std::cout << "End T3" << std::endl;
 }
 
@@ -52,9 +55,11 @@ void  __stdcall t3(void* data)
 
 int main()
 {
-	TaskManager::addTask(t1, reinterpret_cast<void*>(0x100), "t1");
-	TaskManager::addTask(t2, reinterpret_cast<void*>(0x200), "t2");
-	TaskManager::addTask(t3, reinterpret_cast<void*>(0x300), "t3");
+	// Enqueue tasks
+	TaskManager::addTask(t1, (void*)"Hello from task1", "t1");
+	TaskManager::addTask(t2, (void*)"Hi there!", "t2");
+	TaskManager::addTask(t3, (void*)"Task 3 is here", "t3");
+	// run
 	TaskManager::start();
 	return 0;
 }

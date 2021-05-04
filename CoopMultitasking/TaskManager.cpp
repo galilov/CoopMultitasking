@@ -33,7 +33,7 @@ namespace TaskManager {
 	Descriptors _activeTasks, _finishedTasks;
 	Descriptors::iterator _it;
 
-	void addTask(void (*task)(void*), void* data, const char* name)
+	void addTask(void (__stdcall *task)(void*), void* data, const char* name)
 	{
 		_activeTasks.push_back(std::make_shared<TaskDescriptor>(task, data, name));
 	}
