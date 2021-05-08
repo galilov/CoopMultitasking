@@ -26,6 +26,9 @@ extern "C" void __stdcall taskManagerYield(MemAddr*);
 extern "C" void __stdcall lowLevelResume(MemAddr*);
 extern "C" MemAddr * __stdcall lowLevelGetCurrentStack();
 
+// Pointer to MAIN stack
+static MemAddr* _mainSp;
+
 namespace TaskManager {
 	typedef std::shared_ptr<TaskDescriptor> TaskDescritporPtr;
 	typedef std::list<TaskDescritporPtr> Descriptors;
@@ -33,13 +36,14 @@ namespace TaskManager {
 	Descriptors _activeTasks, _finishedTasks;
 	Descriptors::iterator _it;
 
-	void addTask(void (__stdcall *task)(void*), void* data, const char* name)
+	void addTask(void (__stdcall *task)(void*), void* data)
 	{
-		_activeTasks.push_back(std::make_shared<TaskDescriptor>(task, data, name));
+		_activeTasks.push_back(std::make_shared<TaskDescriptor>(task, data));
 	}
 
 	void start()
 	{
+		_mainSp = nullptr;
 		_it = _activeTasks.begin();
 		// Run the first task from MAIN stack context.
 		// The stack will be switched to a local task-related stack.
@@ -47,9 +51,6 @@ namespace TaskManager {
 		//std::cout << "Completed\n"; 
 	}
 }
-
-// Pointer to MAIN stack
-static MemAddr* _mainSp = nullptr;
 
 // This function is called from ASM code as a task completion.
 // It should ALWAYS call lowLevelResume()
@@ -60,8 +61,9 @@ void __stdcall onTaskFinished()
 	if ((*_it)->isOwnerOfStack(sp))
 	{
 		// Avoid of auto-destruction the TaskDescriptor by saving it to
-		// _finishedTasks list. We need its stack data block to complete
-		// current function correctly.
+		// _finishedTasks list. We need its stack data to be allocated
+		// to complete current function correctly.
+		_finishedTasks.clear();
 		_finishedTasks.push_back(*_it);
 		_it = _activeTasks.erase(_it);
 	}

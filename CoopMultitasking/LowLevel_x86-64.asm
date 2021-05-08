@@ -1,6 +1,9 @@
 ; Copyright (c) 2021 Alexander Galilov, alexander.galilov@gmail.com
 ; This code is a part of my cooperative multitasking DEMO for x64 C++ (Visual Studio 2019)
 ;
+; Thanks to Henk-Jan Lebbink for AsmDude plugin:
+; https://marketplace.visualstudio.com/items?itemName=Henk-JanLebbink.AsmDude
+;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
 ; and associated documentation files (the "Software"), to deal in the Software without restriction,
 ; including without limitation the rights to use, copy, modify, merge, publish, distribute,
@@ -17,67 +20,102 @@
 ;
 PUBLIC yield, lowLevelEnqueueTask, lowLevelGetCurrentStack
 EXTERN puts:PROC, taskManagerYield:PROC, onTaskFinished:PROC
-
-pusha64 macro
+;----------------------------------------------------------------------------
+; Shadow Space (see https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-160 ) 
+SHADOWSIZE equ 32
+;----------------------------------------------------------------------------
+; Align stack at 16 (see https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-160 ) 
+alignstack macro
+    and     spl, 0f0h
+    endm
+;----------------------------------------------------------------------------
+pushmmx macro mmxreg
+    sub     rsp, 16
+    movdqu  [rsp], mmxreg
+    endm
+;----------------------------------------------------------------------------
+popmmx macro mmxreg
+    movdqu  mmxreg, [rsp]
+    add     rsp, 16
+    endm
+;----------------------------------------------------------------------------
+pushall macro
     push    rbx
     push    rsi
     push    rdi
-    push    r10
-    push    r11
     push    r12
     push    r13
     push    r14
     push    r15
+    pushmmx xmm6
+    pushmmx xmm7
+    pushmmx xmm8
+    pushmmx xmm9
+    pushmmx xmm10
+    pushmmx xmm11
+    pushmmx xmm12
+    pushmmx xmm13
+    pushmmx xmm14
+    pushmmx xmm15
     endm
-
-popa64  macro
+;----------------------------------------------------------------------------
+popall  macro
+    popmmx  xmm15
+    popmmx  xmm14
+    popmmx  xmm13
+    popmmx  xmm12
+    popmmx  xmm11
+    popmmx  xmm10
+    popmmx  xmm9
+    popmmx  xmm8
+    popmmx  xmm7
+    popmmx  xmm6
     pop     r15
     pop     r14
     pop     r13
     pop     r12
-    pop     r11
-    pop     r10
     pop     rdi
     pop     rsi
     pop     rbx
     endm
-
+;----------------------------------------------------------------------------
 .data
 ; no data
-
+;----------------------------------------------------------------------------
 .code
-
+;----------------------------------------------------------------------------
+; Get current stack pointer to provide it in C++ code
 lowLevelGetCurrentStack PROC
     mov     rax, rsp
     ret
 lowLevelGetCurrentStack ENDP
-
+;----------------------------------------------------------------------------
 ; Task entry code is used to prepare an input parameter in RCX
 taskEntry PROC
     pop     rdx             ; Target task function address
     pop     rcx             ; Argument pointer
-    enter   32, 0           ; Shadow Space (see https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-160 ) 
-    and     spl, -16        ; Align stack at 16
+    enter   SHADOWSIZE, 0   
+    alignstack        
 
     call    rdx
 
     leave                   ; Restore stack (rsp) & frame pointer (rbp)
     ret
 taskEntry ENDP
-
+;----------------------------------------------------------------------------
 ; Should be used from MAIN context to add a new task to task dispatcher
 lowLevelEnqueueTask PROC
-    mov rax, rbp
-    enter  32,0              ; Shadow Space (see https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-160 ) 
-    and spl, -16             ; Align stack at 16
+    mov     rax, rbp
+    enter   SHADOWSIZE, 0
+    alignstack
 
     ; rcx - pointer to function
     ; rdx - void* data
     ; r8  - pointer to function stack
     ; returns  - address of a new host's stack pointer
     mov     rsp, r8
-    sub     rsp, 32          ; Shadow Space in a task stack
-    and     spl, -16         ; Align task stack at 16
+    sub     rsp, SHADOWSIZE ; THIS SPACE IN TASK STACK IS REALLY USED!
+    alignstack
     ; onTaskFinished is a kind of "completion" which is startet at the final stage of task.
     lea     r8, onTaskFinished
     push    r8
@@ -86,37 +124,37 @@ lowLevelEnqueueTask PROC
     ; task entry code
     lea     r8, taskEntry
     push    r8
-    pusha64
+    pushall
     push    rax
     mov     rax, rsp
 
-    leave                       ; Restore stack (rsp) & frame pointer (rbp)
+    leave                   ; Restore stack (rsp) & frame pointer (rbp)
     ret
 lowLevelEnqueueTask ENDP
-
+;----------------------------------------------------------------------------
 ; Get a new stack pointer from passed argument (rcx) and switch the stack
 ; to return into a different task
 lowLevelResume PROC
     mov     rsp, rcx
     pop     rbp
-    popa64
+    popall
     ret
 lowLevelResume ENDP
-
+;----------------------------------------------------------------------------
 ; void yield() is used to switch task. Should be called from running task.
 ; It is also used to run the initial task from main context
 yield PROC   
-    pusha64
+    pushall
     enter   0, 0
     mov     rcx, rsp
-    sub     rsp, 32                 ; Shadow Space (see https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-160 ) 
-    and     spl, -16                ; Align stack at 16
+    sub     rsp, SHADOWSIZE
+    alignstack
     
     call    taskManagerYield
 
-    leave                       ; Restore stack (rsp) & frame pointer (rbp)
-    popa64
+    leave                   ; Restore stack (rsp) & frame pointer (rbp)
+    popall
     ret
 yield ENDP
-
+;----------------------------------------------------------------------------
 END

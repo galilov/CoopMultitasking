@@ -34,13 +34,11 @@ class TaskDescriptor
 public:
 	TaskDescriptor(const TaskDescriptor&) = delete;
 	TaskDescriptor& operator=(const TaskDescriptor&) = delete;
-	TaskDescriptor(void(__stdcall* task)(void*), void* data, const char* name, size_t stackSize = 32768);
+	TaskDescriptor(void(__stdcall* task)(void*), void* data);
 	bool isOwnerOfStack(const MemAddr* sp) { return (sp >= &_stack[0]) && (sp < &_stack[0] + _stack.size()); }
 	void saveStackPointer(MemAddr* sp) { _stackPointer = sp; }
 	MemAddr* getStackPointer() const { return _stackPointer; }
-	const std::string& getName() const { return _name; }
 private:
-	std::string _name;
 	std::vector<MemAddr> _stack;
 	MemAddr* _stackPointer;
 };

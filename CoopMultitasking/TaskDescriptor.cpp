@@ -19,10 +19,11 @@
 
 extern "C" MemAddr * __stdcall lowLevelEnqueueTask(void(*)(void*), void*, MemAddr*);
 
-TaskDescriptor::TaskDescriptor(void(__stdcall* task)(void*), void* data, const char* name, size_t stackSize) :
-	_name(name)
+TaskDescriptor::TaskDescriptor(void(__stdcall* task)(void*), void* data)
 {
-	_stack.resize(stackSize);
+	const size_t nStackEntries = 16384;
+	// allocate nStackEntries of MemAddr for a local task stack 
+	_stack.resize(nStackEntries);
 	for (auto& elem : _stack)
 	{
 		elem = static_cast<MemAddr>(0xdeadbeeff00dULL); // DeadBeefFood for debug
