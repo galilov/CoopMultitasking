@@ -22,19 +22,23 @@
 #include <memory>
 #include <string>
 
-extern "C" void __stdcall yield();
+extern "C" void  yield();
 
 class TaskDescriptor;
 
 typedef std::shared_ptr<TaskDescriptor> TaskDescriptorPtr;
-typedef uint64_t MemAddr;
 
+#ifdef _M_X64
+typedef uint64_t MemAddr;
+#else
+typedef uint32_t MemAddr;
+#endif
 class TaskDescriptor
 {
 public:
 	TaskDescriptor(const TaskDescriptor&) = delete;
 	TaskDescriptor& operator=(const TaskDescriptor&) = delete;
-	TaskDescriptor(void(__stdcall* task)(void*), void* data);
+	TaskDescriptor(void(__stdcall *task)(void*), void* data);
 	bool isOwnerOfStack(const MemAddr* sp) { return (sp >= &_stack[0]) && (sp < &_stack[0] + _stack.size()); }
 	void saveStackPointer(MemAddr* sp) { _stackPointer = sp; }
 	MemAddr* getStackPointer() const { return _stackPointer; }

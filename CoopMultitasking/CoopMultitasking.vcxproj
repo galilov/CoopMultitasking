@@ -143,8 +143,14 @@
     <ClCompile Include="CoopMultitasking.cpp" />
     <ClCompile Include="TaskDescriptor.cpp" />
     <ClCompile Include="TaskManager.cpp" />
+    <MASM Include="LowLevel_x86-32.asm">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </MASM>
     <MASM Include="LowLevel_x86-64.asm">
       <FileType>MASM</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </MASM>
   </ItemGroup>
   <ItemGroup>

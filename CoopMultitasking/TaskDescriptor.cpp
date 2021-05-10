@@ -17,9 +17,9 @@
 //
 #include "TaskDescriptor.h"
 
-extern "C" MemAddr * __stdcall lowLevelEnqueueTask(void(*)(void*), void*, MemAddr*);
+extern "C" MemAddr * lowLevelEnqueueTask(void(__stdcall *)(void*), void*, MemAddr*);
 
-TaskDescriptor::TaskDescriptor(void(__stdcall* task)(void*), void* data)
+TaskDescriptor::TaskDescriptor(void(__stdcall *task)(void*), void* data)
 {
 	const size_t nStackEntries = 16384;
 	// allocate nStackEntries of MemAddr for a local task stack 

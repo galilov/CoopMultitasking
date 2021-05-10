@@ -19,7 +19,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ;
 PUBLIC yield, lowLevelEnqueueTask, lowLevelGetCurrentStack
-EXTERN puts:PROC, taskManagerYield:PROC, onTaskFinished:PROC
+EXTERN taskManagerYield:PROC, onTaskFinished:PROC
 ;----------------------------------------------------------------------------
 ; Shadow Space (see https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-160 ) 
 SHADOWSIZE equ 32
@@ -39,6 +39,7 @@ popmmx macro mmxreg
     add     rsp, 16
     endm
 ;----------------------------------------------------------------------------
+; See https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-160#callercallee-saved-registers
 pushall macro
     push    rbx
     push    rsi
@@ -143,7 +144,7 @@ lowLevelResume ENDP
 ;----------------------------------------------------------------------------
 ; void yield() is used to switch task. Should be called from running task.
 ; It is also used to run the initial task from main context
-yield PROC   
+yield PROC
     pushall
     enter   0, 0
     mov     rcx, rsp

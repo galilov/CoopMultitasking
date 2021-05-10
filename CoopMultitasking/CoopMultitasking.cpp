@@ -17,56 +17,87 @@
 //
 
 #include <iostream>
+#include <string>
+#include <conio.h>
+
 #include "TaskManager.h"
 
-void  __stdcall t1(void* data)
+
+//std::string readString();
+
+void __stdcall t1(void* data)
 {
-    std::cout << "Start T1" << std::endl;
-    std::cout << static_cast<const char*>(data) << std::endl;
-    for (auto i = 0; i < 6; i++)
-    {
-        std::cout << "In T1 " << i << std::endl;
-        yield();
-    }
-    std::cout << "End T1" << std::endl;
+	std::cout << "Start T1" << std::endl;
+	std::cout << static_cast<const char*>(data) << std::endl;
+	for (auto i = 0; i < 6; i++)
+	{
+		std::cout << "In T1 " << i << std::endl;
+		yield();
+	}
+	std::cout << "End T1" << std::endl;
 }
 
 void  __stdcall t2(void* data)
 {
-    std::cout << "Start T2" << std::endl;
-    std::cout << static_cast<const char*>(data) << std::endl;
-    for (auto i = 0; i < 5; i++)
-    {
-        std::cout << "In T2 " << i << std::endl;
-        yield();
-    }
-    std::cout << "End T2" << std::endl;
+	std::cout << "Start T2" << std::endl;
+	//auto s = readString();
+	//std::cout << std::endl;
+	//std::cout << s << std::endl;
+	std::cout << static_cast<const char*>(data) << std::endl;
+	for (auto i = 0; i < 5; i++)
+	{
+		std::cout << "In T2 " << i << std::endl;
+		yield();
+	}
+	std::cout << "End T2" << std::endl;
 }
 
-void  __stdcall t3(void* data)
+void __stdcall t4(void* data);
+
+void __stdcall t3(void* data)
 {
-    std::cout << "Start T3" << std::endl;
-    yield();
-    std::cout << static_cast<const char*>(data) << std::endl;
-    std::cout << "End T3" << std::endl;
+	std::cout << "Start T3" << std::endl;
+	yield();
+	TaskManager::addTask(t4, reinterpret_cast<void*>(5));
+	std::cout << static_cast<const char*>(data) << std::endl;
+	std::cout << "End T3" << std::endl;
 }
 
-void  __stdcall t4(void* data)
+void __stdcall t4(void* data)
 {
-    std::cout << "Start T4" << std::endl;
-    yield();
-    if (data) t4(reinterpret_cast<void*>(reinterpret_cast<int>(data)-1));
-    std::cout << "End T4" << std::endl;
+	std::cout << "Start T4" << std::endl;
+	yield();
+	if (data) t4(reinterpret_cast<void*>(reinterpret_cast<int>(data) - 1));
+	std::cout << "End T4" << std::endl;
 }
+
+//std::string readString()
+//{
+//	std::string result;
+//	for (;;)
+//	{
+//		if (_kbhit()) 
+//		{
+//			char c = static_cast<char>(_getch_nolock());
+//			if (c == '\r')
+//			{
+//				return result;
+//			}
+//			_putch_nolock(c);
+//			result += c;
+//		}
+//		yield();
+//	}
+//}
 
 int main()
 {
-    // Enqueue tasks
-    TaskManager::addTask(t1, (void*)"Hello from task1");
-    TaskManager::addTask(t2, (void*)"Hi there!");
-    TaskManager::addTask(t3, (void*)"Task 3 is here");
-    TaskManager::addTask(t4, reinterpret_cast<void*>(5));
-    // run
-    TaskManager::start();
-    return 0;
+	// Enqueue tasks
+	TaskManager::addTask(t1, (void*)"Hello from task1");
+	TaskManager::addTask(t2, (void*)"Hi there!");
+	TaskManager::addTask(t3, (void*)"Task 3 is here");
+
+	// run
+	TaskManager::start();
+	return 0;
 }

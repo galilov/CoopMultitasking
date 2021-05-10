@@ -21,10 +21,10 @@
 
 #include "TaskDescriptor.h"
 
-extern "C" void __stdcall onTaskFinished();
-extern "C" void __stdcall taskManagerYield(MemAddr*);
-extern "C" void __stdcall lowLevelResume(MemAddr*);
-extern "C" MemAddr * __stdcall lowLevelGetCurrentStack();
+extern "C" void onTaskFinished();
+extern "C" void taskManagerYield(MemAddr*);
+extern "C" void lowLevelResume(MemAddr*);
+extern "C" MemAddr * lowLevelGetCurrentStack();
 
 // Pointer to MAIN stack
 static MemAddr* _mainSp;
@@ -32,7 +32,7 @@ static MemAddr* _mainSp;
 namespace TaskManager {
 	typedef std::shared_ptr<TaskDescriptor> TaskDescritporPtr;
 	typedef std::list<TaskDescritporPtr> Descriptors;
-	
+
 	Descriptors _activeTasks, _finishedTasks;
 	Descriptors::iterator _it;
 
@@ -54,7 +54,7 @@ namespace TaskManager {
 
 // This function is called from ASM code as a task completion.
 // It should ALWAYS call lowLevelResume()
-void __stdcall onTaskFinished()
+void  onTaskFinished()
 {
 	using namespace TaskManager;
 	auto* sp = lowLevelGetCurrentStack();
@@ -85,7 +85,7 @@ void __stdcall onTaskFinished()
 }
 
 
-void __stdcall taskManagerYield(MemAddr* sp)
+void taskManagerYield(MemAddr* sp)
 {
 	using namespace TaskManager;
 	if (_activeTasks.size() < 2)
