@@ -40,9 +40,9 @@ Example:
         int main()
         {
                 // Enqueue tasks
-                TaskManager::addTask(t1, (void*)"Hello from task1", "t1");
-                TaskManager::addTask(t2, (void*)"Hi there!", "t2");
-                TaskManager::addTask(t3, (void*)"Task 3 is here", "t3");
+                TaskManager::addTask(t1, (void*)"Hello from task1");
+                TaskManager::addTask(t2, (void*)"Hi there!");
+                TaskManager::addTask(t3, (void*)"Task 3 is here");
                 // run
                 TaskManager::start();
                 return 0;

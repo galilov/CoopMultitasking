@@ -136,7 +136,7 @@ lowLevelEnqueueTask ENDP
 ; Get a new stack pointer from passed argument (rcx) and switch the stack
 ; to return into a different task
 lowLevelResume PROC
-    mov     rsp, rcx
+    mov     rsp, rcx ; here is a stack pointer address
     pop     rbp
     popall
     ret

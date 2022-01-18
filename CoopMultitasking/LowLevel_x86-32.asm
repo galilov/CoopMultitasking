@@ -79,8 +79,8 @@ OPTION EPILOGUE:EPILOGUEDEF
 ; to return into a different task
 OPTION PROLOGUE:NONE
 OPTION EPILOGUE:NONE
-lowLevelResume PROC pStack:DWORD
-    mov     esp, [esp + 4]
+lowLevelResume PROC
+    mov     esp, [esp + 4] ; here is a stack pointer address
     pop     ebp
     popall
     ret
