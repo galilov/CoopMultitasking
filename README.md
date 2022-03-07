@@ -1,4 +1,4 @@
-# Cooperative multitasking DEMO for x64 C++ (Visual Studio 2019)
+# Cooperative multitasking DEMO for x64 C++ (Visual Studio 2019).
 
 Example:
 ```c++
