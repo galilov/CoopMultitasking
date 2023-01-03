@@ -18,77 +18,69 @@
 
 #include <iostream>
 #include <string>
-#include <conio.h>
 
 #include "TaskManager.h"
+#include "utils.h"
 
 
-//std::string readString();
+void __stdcall t5(void* data);
 
 void __stdcall t1(void* data)
 {
-	std::cout << "Start T1" << std::endl;
+	std::cout << "Start T1:";
 	std::cout << static_cast<const char*>(data) << std::endl;
-	for (auto i = 0; i < 6; i++)
+	for (auto i = 0; i < 10; i++)
 	{
-		std::cout << "In T1 " << i << std::endl;
-		yield();
+		mySleep(1000);
+		std::cout << "T1:" << i << std::endl;
 	}
 	std::cout << "End T1" << std::endl;
 }
 
 void  __stdcall t2(void* data)
 {
-	std::cout << "Start T2" << std::endl;
-	//auto s = readString();
-	//std::cout << std::endl;
-	//std::cout << s << std::endl;
+	std::cout << "Start T2:";
 	std::cout << static_cast<const char*>(data) << std::endl;
-	for (auto i = 0; i < 5; i++)
+	for (auto i = 0; i < 10; i++)
 	{
-		std::cout << "In T2 " << i << std::endl;
-		yield();
+		mySleep(500);
+		std::cout << "T2:" << i << std::endl;
 	}
 	std::cout << "End T2" << std::endl;
 }
 
-void __stdcall t4(void* data);
-
 void __stdcall t3(void* data)
 {
-	std::cout << "Start T3" << std::endl;
-	yield();
-	TaskManager::addTask(t4, reinterpret_cast<void*>(5));
+	std::cout << "Start T3:";
 	std::cout << static_cast<const char*>(data) << std::endl;
+	for (auto i = 0; i < 10; i++)
+	{
+		mySleep(2000);
+		std::cout << "T3:" << i << std::endl;
+	}
 	std::cout << "End T3" << std::endl;
 }
 
 void __stdcall t4(void* data)
 {
-	std::cout << "Start T4" << std::endl;
-	yield();
-	if (data) t4(reinterpret_cast<void*>(reinterpret_cast<int>(data) - 1));
+	std::cout << "Start T4:";
+	std::cout << static_cast<const char*>(data) << std::endl;
+	for (auto i = 0; i < 10; i++)
+	{
+		mySleep(100);
+		std::cout << "T4:" << i << std::endl;
+	}
+	TaskManager::addTask(t5, nullptr);
 	std::cout << "End T4" << std::endl;
 }
 
-//std::string readString()
-//{
-//	std::string result;
-//	for (;;)
-//	{
-//		if (_kbhit()) 
-//		{
-//			char c = static_cast<char>(_getch_nolock());
-//			if (c == '\r')
-//			{
-//				return result;
-//			}
-//			_putch_nolock(c);
-//			result += c;
-//		}
-//		yield();
-//	}
-//}
+void __stdcall t5(void* data) {
+	std::cout << "Start T5, Enter a text line and press Enter: ";
+	std::string s = readString();
+	std::cout << std::endl;
+	std::cout << s << std::endl;
+	std::cout << "DONE" << std::endl;
+}
 
 int main()
 {
@@ -96,6 +88,7 @@ int main()
 	TaskManager::addTask(t1, (void*)"Hello from task1");
 	TaskManager::addTask(t2, (void*)"Hi there!");
 	TaskManager::addTask(t3, (void*)"Task 3 is here");
+	TaskManager::addTask(t4, (void*)"Task 4!!!!");
 
 	// run
 	TaskManager::start();

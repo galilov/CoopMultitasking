@@ -24,6 +24,9 @@
     <ClCompile Include="TaskManager.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="LowLevel_x86-64.asm">
@@ -38,6 +41,9 @@
       <Filter>headers</Filter>
     </ClInclude>
     <ClInclude Include="TaskManager.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
       <Filter>headers</Filter>
     </ClInclude>
   </ItemGroup>

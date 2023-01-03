@@ -117,7 +117,7 @@ lowLevelEnqueueTask PROC
     mov     rsp, r8
     sub     rsp, SHADOWSIZE ; THIS SPACE IN TASK STACK IS REALLY USED!
     alignstack
-    ; onTaskFinished is a kind of "completion" which is startet at the final stage of task.
+    ; onTaskFinished is a kind of "completion" which is started at the final stage of task.
     lea     r8, onTaskFinished
     push    r8
     push    rdx

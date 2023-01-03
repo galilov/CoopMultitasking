@@ -63,7 +63,7 @@ lowLevelEnqueueTask PROC pFunc:PTR, pData:PTR, pStack:PTR
     ; esp <- pointer to function stack
     mov     esp, pStack
     push    edx
-    ; onTaskFinished is a kind of "completion" which is startet at the final stage of task.
+    ; onTaskFinished is a kind of "completion" which is started at the final stage of task.
     push    onTaskFinished
     push    ecx
     pushall
