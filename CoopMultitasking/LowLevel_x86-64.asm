@@ -109,7 +109,6 @@ fiberEntry ENDP
 ; returns new stack pointer in rax
 lowLevelEnqueueFiber PROC
     enter   SHADOWSIZE, 0
-    alignstack
 
     ; rcx - pointer to a fiber function
     ; rdx - void* data
@@ -152,8 +151,9 @@ yield PROC
     mov     rcx, rsp        ; rcx is passed as parameter to fiberManagerYield
     sub     rsp, SHADOWSIZE
     alignstack
-    ; fiberManagerYield(sp) switches the stack to another fiber
+    ; fiberManagerYield(sp) switches the execution to another fiber
     call    fiberManagerYield
+
     leave                   ; Restore stack (rsp) & frame pointer (rbp)
     popall
     ret

@@ -17,9 +17,9 @@
 //
 #include "FiberDescriptor.h"
 
-extern "C" MemAddr * lowLevelEnqueueFiber(void(__stdcall *)(void*), void*, MemAddr*); // defined in .asm
+extern "C" MemAddr* lowLevelEnqueueFiber(void(__stdcall*)(void*), void*, MemAddr*); // defined in .asm
 
-FiberDescriptor::FiberDescriptor(void(__stdcall *fiber)(void*), void* data)
+FiberDescriptor::FiberDescriptor(void(__stdcall* fiber)(void*), void* data)
 {
 	const size_t nStackEntries = 16384;
 	// allocate nStackEntries of MemAddr for a local fiber stack 

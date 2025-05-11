@@ -29,12 +29,14 @@ pushall macro
     push    ebx
     push    esi
     push    edi
+    push    ebp
     endm
 ;----------------------------------------------------------------------------
 ; See https://www.agner.org/optimize/calling_conventions.pdf and
 ; https://learn.microsoft.com/en-us/cpp/cpp/cdecl?view=msvc-160
 ; Non-vloatile registers are EBX, EBP, ESP, EDI, ESI, CS and DS
 popall  macro
+    pop     ebp
     pop     edi
     pop     esi
     pop     ebx
@@ -73,8 +75,8 @@ lowLevelEnqueueFiber PROC pFunc:PTR, pData:PTR, pStack:PTR
     push    0
     push    0
     push    0
-    mov     eax, esp    ; result - address of a new host's stack pointer in eax.
-    ret                 ; here we use automatically generated epilogue
+    mov     eax, esp    ; the result is the address of the new host's stack pointer in eax.
+    ret                 ; here we use the automatically generated epilogue
 lowLevelEnqueueFiber ENDP
 ;----------------------------------------------------------------------------
 ; Get a new stack pointer from passed argument and switch the stack
@@ -84,7 +86,6 @@ OPTION EPILOGUE:NONE
 lowLevelResume PROC
     mov     esp, [esp + 4] ; update esp with a new address taken from a parameter passed via stack
     ; extract previously saved non-volatile registers
-    pop     ebp
     popall
     ret
 lowLevelResume ENDP
@@ -97,11 +98,8 @@ OPTION PROLOGUE:NONE
 OPTION EPILOGUE:NONE
 yield PROC
     pushall
-    push    ebp
-    mov     eax, esp
-    ; fiberManagerYield(sp) switches the stack to another fiber
+    ; fiberManagerYield(sp) switches the execution to another fiber
     invoke  fiberManagerYield, esp ; pass a stack pointer to fiberManagerYield as parameter
-    pop     ebp
     popall
     ret
 yield ENDP

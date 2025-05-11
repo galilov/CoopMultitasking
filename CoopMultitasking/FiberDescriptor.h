@@ -38,7 +38,7 @@ class FiberDescriptor
 public:
 	FiberDescriptor(const FiberDescriptor&) = delete;
 	FiberDescriptor& operator=(const FiberDescriptor&) = delete;
-	FiberDescriptor(void(__stdcall *fiber)(void*), void* data);
+	FiberDescriptor(void(__stdcall* fiber)(void*), void* data);
 	bool isOwnerOfStack(const MemAddr* sp) { return (sp >= &_stack[0]) && (sp < &_stack[0] + _stack.size()); }
 	void saveStackPointer(MemAddr* sp) { _stackPointer = sp; }
 	MemAddr* getStackPointer() const { return _stackPointer; }

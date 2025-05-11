@@ -24,7 +24,7 @@
 extern "C" void onFiberFinished();              // called from .asm
 extern "C" void fiberManagerYield(MemAddr*);    // called from .asm
 extern "C" void lowLevelResume(MemAddr*);       // defined in .asm
-extern "C" MemAddr * lowLevelGetCurrentStack(); // defined in .asm
+extern "C" MemAddr* lowLevelGetCurrentStack(); // defined in .asm
 
 // Pointer to MAIN stack
 static MemAddr* _mainSp;
@@ -37,7 +37,7 @@ namespace FiberManager {
 	FiberDescritporPtr _finishedFiber;
 	Descriptors::iterator _it; // points to a current fiber
 
-	void addFiber(void (__stdcall *fiber)(void*), void* data)
+	void addFiber(void(__stdcall* fiber)(void*), void* data)
 	{
 		_fibers.push_back(std::make_unique<FiberDescriptor>(fiber, data));
 	}
