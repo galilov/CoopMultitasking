@@ -1,5 +1,5 @@
 ; Copyright (c) 2021, 2025 Alexander Galilov, alexander.galilov@gmail.com
-; This code is a part of my cooperative multitasking (fibers) DEMO for x64 C++ (Visual Studio 2019)
+; This code is a part of my cooperative multitasking (fibers) DEMO for 32bit x86 C++ (Visual Studio 2019)
 ;
 ; Thanks to Henk-Jan Lebbink for AsmDude plugin:
 ; https://marketplace.visualstudio.com/items?itemName=Henk-JanLebbink.AsmDude
@@ -19,11 +19,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ;
 .686
-.MODEL FLAT, C
+.MODEL FLAT, C ; use cdecl convention
 
 ;----------------------------------------------------------------------------
 ; See https://www.agner.org/optimize/calling_conventions.pdf and
-; https://docs.microsoft.com/en-us/cpp/cpp/stdcall?view=msvc-160
+; https://learn.microsoft.com/en-us/cpp/cpp/cdecl?view=msvc-160
+; Non-vloatile registers are EBX, EBP, ESP, EDI, ESI, CS and DS
 pushall macro
     push    ebx
     push    esi
@@ -31,7 +32,8 @@ pushall macro
     endm
 ;----------------------------------------------------------------------------
 ; See https://www.agner.org/optimize/calling_conventions.pdf and
-; https://docs.microsoft.com/en-us/cpp/cpp/stdcall?view=msvc-160
+; https://learn.microsoft.com/en-us/cpp/cpp/cdecl?view=msvc-160
+; Non-vloatile registers are EBX, EBP, ESP, EDI, ESI, CS and DS
 popall  macro
     pop     edi
     pop     esi
@@ -41,65 +43,69 @@ popall  macro
 
 ;----------------------------------------------------------------------------
 .code
-PUBLIC yield, lowLevelEnqueueFiber, lowLevelGetCurrentStack
-fiberManagerYield PROTO stackPointer:PTR
-onFiberFinished PROTO
+PUBLIC yield, lowLevelEnqueueFiber, lowLevelGetCurrentStack ; exported names
+fiberManagerYield PROTO stackPointer:PTR    ; the function is defined in C-code
+onFiberFinished PROTO                       ; the function is defined in C-code
 ;----------------------------------------------------------------------------
 ; Get current stack pointer to provide it in C++ code
+OPTION PROLOGUE:NONE ; do not generate prologue
+OPTION EPILOGUE:NONE ; do not generate epilogue
 lowLevelGetCurrentStack PROC
     mov     eax, esp
     ret
 lowLevelGetCurrentStack ENDP
+OPTION PROLOGUE:PROLOGUEDEF ; use default prologue
+OPTION EPILOGUE:EPILOGUEDEF ; and epilogue
 ;----------------------------------------------------------------------------
 ; Should be used from MAIN context to add a new fiber to fiber dispatcher
-OPTION PROLOGUE:NONE
-OPTION EPILOGUE:NONE
+; returns new stack pointer in eax
 lowLevelEnqueueFiber PROC pFunc:PTR, pData:PTR, pStack:PTR
-    mov     eax, ebp
-    push    ebp
-    mov     ebp, esp
-    ; ecx <- pointer to function
-    mov     ecx, pFunc
-    ; edx <- void* data 
-    mov     edx, pData
-    ; esp <- pointer to function stack
-    mov     esp, pStack
-    push    edx
-    ; onFiberFinished is a kind of "completion" which is started at the final stage of fiber.
+    ; we use an automcatically generated prologue which prepares the stack frame
+    mov     eax, pFunc
+    mov     ecx, pData
+    mov     esp, pStack ; prepare the top of stack for a new fiber
+    push    ecx         ; point to void* parameter will passed to the fiber via stack
+    ; onFiberFinished is handler which is called at the fiber completion stage
     push    onFiberFinished
-    push    ecx
-    pushall
-    push    eax
-    mov     eax, esp    ; returns  - address of a new host's stack pointer in eax
-    leave
-    ret
+    push    eax         ; pointer to a fiber function
+    ; allocate stack space to popping edi, esi, ebx, ebp in lowLevelResume()
+    push    0
+    push    0
+    push    0
+    push    0
+    mov     eax, esp    ; result - address of a new host's stack pointer in eax.
+    ret                 ; here we use automatically generated epilogue
 lowLevelEnqueueFiber ENDP
-OPTION PROLOGUE:PROLOGUEDEF 
-OPTION EPILOGUE:EPILOGUEDEF
 ;----------------------------------------------------------------------------
 ; Get a new stack pointer from passed argument and switch the stack
 ; to return into a different fiber
 OPTION PROLOGUE:NONE
 OPTION EPILOGUE:NONE
 lowLevelResume PROC
-    mov     esp, [esp + 4] ; here is a stack pointer address
+    mov     esp, [esp + 4] ; update esp with a new address taken from a parameter passed via stack
+    ; extract previously saved non-volatile registers
     pop     ebp
     popall
     ret
 lowLevelResume ENDP
-OPTION PROLOGUE:PROLOGUEDEF 
-OPTION EPILOGUE:EPILOGUEDEF
+OPTION PROLOGUE:PROLOGUEDEF ; use default prologue
+OPTION EPILOGUE:EPILOGUEDEF ; and epilogue
 ;----------------------------------------------------------------------------
 ; void yield() is used to switch fiber. Should be called from running fiber.
 ; It is also used to run the initial fiber from main context
+OPTION PROLOGUE:NONE
+OPTION EPILOGUE:NONE
 yield PROC
     pushall
     push    ebp
     mov     eax, esp
-    invoke  fiberManagerYield, eax
+    ; fiberManagerYield(sp) switches the stack to another fiber
+    invoke  fiberManagerYield, esp ; pass a stack pointer to fiberManagerYield as parameter
     pop     ebp
     popall
     ret
 yield ENDP
+OPTION PROLOGUE:PROLOGUEDEF ; use default prologue
+OPTION EPILOGUE:EPILOGUEDEF ; and epilogue
 ;----------------------------------------------------------------------------
 END

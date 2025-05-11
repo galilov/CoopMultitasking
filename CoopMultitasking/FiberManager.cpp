@@ -21,16 +21,16 @@
 
 #include "FiberDescriptor.h"
 
-extern "C" void onFiberFinished();
-extern "C" void fiberManagerYield(MemAddr*);
-extern "C" void lowLevelResume(MemAddr*);
-extern "C" MemAddr * lowLevelGetCurrentStack();
+extern "C" void onFiberFinished();              // called from .asm
+extern "C" void fiberManagerYield(MemAddr*);    // called from .asm
+extern "C" void lowLevelResume(MemAddr*);       // defined in .asm
+extern "C" MemAddr * lowLevelGetCurrentStack(); // defined in .asm
 
 // Pointer to MAIN stack
 static MemAddr* _mainSp;
 
 namespace FiberManager {
-	typedef std::shared_ptr<FiberDescriptor> FiberDescritporPtr;
+	typedef std::unique_ptr<FiberDescriptor> FiberDescritporPtr;
 	typedef std::list<FiberDescritporPtr> Descriptors;
 
 	Descriptors _fibers;
@@ -39,7 +39,7 @@ namespace FiberManager {
 
 	void addFiber(void (__stdcall *fiber)(void*), void* data)
 	{
-		_fibers.push_back(std::make_shared<FiberDescriptor>(fiber, data));
+		_fibers.push_back(std::make_unique<FiberDescriptor>(fiber, data));
 	}
 
 	void start()
@@ -58,16 +58,16 @@ namespace FiberManager {
 void onFiberFinished()
 {
 	using namespace FiberManager;
-	MemAddr* sp = lowLevelGetCurrentStack();
 	// Currently completing fiber is ALWAYS the owner of current stack. But we must be sure!
-	assert((*_it)->isOwnerOfStack(sp));
+	assert((*_it)->isOwnerOfStack(lowLevelGetCurrentStack()));
 	// Avoid of auto-destruction the FiberDescriptor by saving it to
 	// finishedTask shared pointer. We need this stack to be allocated
 	// because it is current stack we are working with right now.
-	_finishedFiber = *_it;
-	// remove completed fiber from the list
+	_finishedFiber.reset(_it->release());
+	// Remove completed fiber from the list.
 	_it = _fibers.erase(_it);
 
+	MemAddr* sp;
 	if (_fibers.empty())
 	{
 		// Prepare the final completion, we will return the control

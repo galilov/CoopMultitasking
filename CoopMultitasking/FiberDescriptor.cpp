@@ -17,7 +17,7 @@
 //
 #include "FiberDescriptor.h"
 
-extern "C" MemAddr * lowLevelEnqueueFiber(void(__stdcall *)(void*), void*, MemAddr*);
+extern "C" MemAddr * lowLevelEnqueueFiber(void(__stdcall *)(void*), void*, MemAddr*); // defined in .asm
 
 FiberDescriptor::FiberDescriptor(void(__stdcall *fiber)(void*), void* data)
 {

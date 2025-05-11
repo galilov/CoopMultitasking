@@ -18,8 +18,8 @@
 ; DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ;
-PUBLIC yield, lowLevelEnqueueFiber, lowLevelGetCurrentStack
-EXTERN fiberManagerYield:PROC, onFiberFinished:PROC
+PUBLIC yield, lowLevelEnqueueFiber, lowLevelGetCurrentStack ; exported names
+EXTERN fiberManagerYield:PROC, onFiberFinished:PROC ;  these functions are defined in C-code
 ;----------------------------------------------------------------------------
 ; Shadow Space (see https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-160 ) 
 SHADOWSIZE equ 32
@@ -39,7 +39,7 @@ popmmx macro mmxreg
     add     rsp, 16
     endm
 ;----------------------------------------------------------------------------
-; See https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-160#callercallee-saved-registers
+; See https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170#callercallee-saved-registers
 pushall macro
     push    rbx
     push    rsi
@@ -60,7 +60,7 @@ pushall macro
     pushmmx xmm15
     endm
 ;----------------------------------------------------------------------------
-; See https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-160#callercallee-saved-registers
+; See https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-170#callercallee-saved-registers
 popall  macro
     popmmx  xmm15
     popmmx  xmm14
@@ -93,7 +93,7 @@ lowLevelGetCurrentStack PROC
 lowLevelGetCurrentStack ENDP
 ;----------------------------------------------------------------------------
 ; Fiber entry code is used to prepare an input parameter in RCX
-taskEntry PROC
+fiberEntry PROC
     pop     rdx             ; Target fiber function address
     pop     rcx             ; Argument pointer
     enter   SHADOWSIZE, 0   
@@ -103,31 +103,31 @@ taskEntry PROC
 
     leave                   ; Restore stack (rsp) & frame pointer (rbp)
     ret
-taskEntry ENDP
+fiberEntry ENDP
 ;----------------------------------------------------------------------------
 ; Should be used from MAIN context to add a new fiber to fiber dispatcher
+; returns new stack pointer in rax
 lowLevelEnqueueFiber PROC
-    mov     rax, rbp
     enter   SHADOWSIZE, 0
     alignstack
 
-    ; rcx - pointer to function
+    ; rcx - pointer to a fiber function
     ; rdx - void* data
-    ; r8  - pointer to function stack
+    ; r8  - pointer to a function stack
     ; returns  - address of a new host's stack pointer
-    mov     rsp, r8
+    mov     rsp, r8         ; prepare the top of stack for a new fiber
     sub     rsp, SHADOWSIZE ; THIS SPACE IN TASK STACK IS REALLY USED!
     alignstack
-    ; onFiberFinished is a kind of "completion" which is started at the final stage of fiber.
+    ; onFiberFinished is handler which is called at the fiber completion stage.
     lea     r8, onFiberFinished
     push    r8
     push    rdx
     push    rcx
-    ; fiber entry code
-    lea     r8, taskEntry
+    ; prepare fiber entry proxy function
+    lea     r8, fiberEntry
     push    r8
-    pushall
-    push    rax
+    pushall                 ; allocate stack space to popping non-volatile registers in lowLevelResume() 
+    push    0               ; 0 is a value for RBP when it will be popped in lowLevelResume().
     mov     rax, rsp
 
     leave                   ; Restore stack (rsp) & frame pointer (rbp)
@@ -138,6 +138,7 @@ lowLevelEnqueueFiber ENDP
 ; to return into a different fiber
 lowLevelResume PROC
     mov     rsp, rcx ; here is a stack pointer address
+    ; extract previously saved non-volatile registers
     pop     rbp
     popall
     ret
@@ -147,13 +148,12 @@ lowLevelResume ENDP
 ; It is also used to run the initial fiber from main context
 yield PROC
     pushall
-    enter   0, 0
-    mov     rcx, rsp
+    enter   0, 0            ; it pushes RBP to current stack and set RBP=RSP
+    mov     rcx, rsp        ; rcx is passed as parameter to fiberManagerYield
     sub     rsp, SHADOWSIZE
     alignstack
-    
+    ; fiberManagerYield(sp) switches the stack to another fiber
     call    fiberManagerYield
-
     leave                   ; Restore stack (rsp) & frame pointer (rbp)
     popall
     ret

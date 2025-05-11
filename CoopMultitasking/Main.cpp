@@ -79,7 +79,7 @@ void __stdcall t5(void* data) {
 	std::string s = readString();
 	std::cout << std::endl;
 	std::cout << s << std::endl;
-	std::cout << "DONE" << std::endl;
+	std::cout << "End T5" << std::endl;
 }
 
 int main()

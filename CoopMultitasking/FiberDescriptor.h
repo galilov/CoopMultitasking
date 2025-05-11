@@ -22,7 +22,7 @@
 #include <memory>
 #include <string>
 
-extern "C" void  yield();
+extern "C" void yield(); // defined in .asm
 
 class FiberDescriptor;
 
