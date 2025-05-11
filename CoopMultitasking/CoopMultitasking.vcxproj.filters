@@ -15,13 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CoopMultitasking.cpp">
+    <ClCompile Include="Main.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="TaskDescriptor.cpp">
+    <ClCompile Include="FiberDescriptor.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="TaskManager.cpp">
+    <ClCompile Include="FiberManager.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="utils.cpp">
@@ -37,10 +37,10 @@
     </MASM>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TaskDescriptor.h">
+    <ClInclude Include="FiberDescriptor.h">
       <Filter>headers</Filter>
     </ClInclude>
-    <ClInclude Include="TaskManager.h">
+    <ClInclude Include="FiberManager.h">
       <Filter>headers</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">

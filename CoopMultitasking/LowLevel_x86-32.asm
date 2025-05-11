@@ -1,5 +1,5 @@
-; Copyright (c) 2021 Alexander Galilov, alexander.galilov@gmail.com
-; This code is a part of my cooperative multitasking DEMO for x64 C++ (Visual Studio 2019)
+; Copyright (c) 2021, 2025 Alexander Galilov, alexander.galilov@gmail.com
+; This code is a part of my cooperative multitasking (fibers) DEMO for x64 C++ (Visual Studio 2019)
 ;
 ; Thanks to Henk-Jan Lebbink for AsmDude plugin:
 ; https://marketplace.visualstudio.com/items?itemName=Henk-JanLebbink.AsmDude
@@ -30,6 +30,8 @@ pushall macro
     push    edi
     endm
 ;----------------------------------------------------------------------------
+; See https://www.agner.org/optimize/calling_conventions.pdf and
+; https://docs.microsoft.com/en-us/cpp/cpp/stdcall?view=msvc-160
 popall  macro
     pop     edi
     pop     esi
@@ -39,9 +41,9 @@ popall  macro
 
 ;----------------------------------------------------------------------------
 .code
-PUBLIC yield, lowLevelEnqueueTask, lowLevelGetCurrentStack
-taskManagerYield PROTO stackPointer:PTR
-onTaskFinished PROTO
+PUBLIC yield, lowLevelEnqueueFiber, lowLevelGetCurrentStack
+fiberManagerYield PROTO stackPointer:PTR
+onFiberFinished PROTO
 ;----------------------------------------------------------------------------
 ; Get current stack pointer to provide it in C++ code
 lowLevelGetCurrentStack PROC
@@ -49,10 +51,10 @@ lowLevelGetCurrentStack PROC
     ret
 lowLevelGetCurrentStack ENDP
 ;----------------------------------------------------------------------------
-; Should be used from MAIN context to add a new task to task dispatcher
+; Should be used from MAIN context to add a new fiber to fiber dispatcher
 OPTION PROLOGUE:NONE
 OPTION EPILOGUE:NONE
-lowLevelEnqueueTask PROC pFunc:PTR, pData:PTR, pStack:PTR
+lowLevelEnqueueFiber PROC pFunc:PTR, pData:PTR, pStack:PTR
     mov     eax, ebp
     push    ebp
     mov     ebp, esp
@@ -63,20 +65,20 @@ lowLevelEnqueueTask PROC pFunc:PTR, pData:PTR, pStack:PTR
     ; esp <- pointer to function stack
     mov     esp, pStack
     push    edx
-    ; onTaskFinished is a kind of "completion" which is started at the final stage of task.
-    push    onTaskFinished
+    ; onFiberFinished is a kind of "completion" which is started at the final stage of fiber.
+    push    onFiberFinished
     push    ecx
     pushall
     push    eax
     mov     eax, esp    ; returns  - address of a new host's stack pointer in eax
     leave
     ret
-lowLevelEnqueueTask ENDP
+lowLevelEnqueueFiber ENDP
 OPTION PROLOGUE:PROLOGUEDEF 
 OPTION EPILOGUE:EPILOGUEDEF
 ;----------------------------------------------------------------------------
 ; Get a new stack pointer from passed argument and switch the stack
-; to return into a different task
+; to return into a different fiber
 OPTION PROLOGUE:NONE
 OPTION EPILOGUE:NONE
 lowLevelResume PROC
@@ -88,13 +90,13 @@ lowLevelResume ENDP
 OPTION PROLOGUE:PROLOGUEDEF 
 OPTION EPILOGUE:EPILOGUEDEF
 ;----------------------------------------------------------------------------
-; void yield() is used to switch task. Should be called from running task.
-; It is also used to run the initial task from main context
+; void yield() is used to switch fiber. Should be called from running fiber.
+; It is also used to run the initial fiber from main context
 yield PROC
     pushall
     push    ebp
     mov     eax, esp
-    invoke  taskManagerYield, eax
+    invoke  fiberManagerYield, eax
     pop     ebp
     popall
     ret

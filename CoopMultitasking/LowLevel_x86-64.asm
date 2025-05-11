@@ -1,5 +1,5 @@
-; Copyright (c) 2021 Alexander Galilov, alexander.galilov@gmail.com
-; This code is a part of my cooperative multitasking DEMO for x64 C++ (Visual Studio 2019)
+; Copyright (c) 2021, 2025 Alexander Galilov, alexander.galilov@gmail.com
+; This code is a part of my cooperative multitasking (fibers) DEMO for x64 C++ (Visual Studio 2019)
 ;
 ; Thanks to Henk-Jan Lebbink for AsmDude plugin:
 ; https://marketplace.visualstudio.com/items?itemName=Henk-JanLebbink.AsmDude
@@ -18,8 +18,8 @@
 ; DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ;
-PUBLIC yield, lowLevelEnqueueTask, lowLevelGetCurrentStack
-EXTERN taskManagerYield:PROC, onTaskFinished:PROC
+PUBLIC yield, lowLevelEnqueueFiber, lowLevelGetCurrentStack
+EXTERN fiberManagerYield:PROC, onFiberFinished:PROC
 ;----------------------------------------------------------------------------
 ; Shadow Space (see https://docs.microsoft.com/en-us/cpp/build/stack-usage?view=msvc-160 ) 
 SHADOWSIZE equ 32
@@ -60,6 +60,7 @@ pushall macro
     pushmmx xmm15
     endm
 ;----------------------------------------------------------------------------
+; See https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention?view=msvc-160#callercallee-saved-registers
 popall  macro
     popmmx  xmm15
     popmmx  xmm14
@@ -85,15 +86,15 @@ popall  macro
 ;----------------------------------------------------------------------------
 .code
 ;----------------------------------------------------------------------------
-; Get current stack pointer to provide it in C++ code
+; Get current stack pointer to provide it to C++ code
 lowLevelGetCurrentStack PROC
     mov     rax, rsp
     ret
 lowLevelGetCurrentStack ENDP
 ;----------------------------------------------------------------------------
-; Task entry code is used to prepare an input parameter in RCX
+; Fiber entry code is used to prepare an input parameter in RCX
 taskEntry PROC
-    pop     rdx             ; Target task function address
+    pop     rdx             ; Target fiber function address
     pop     rcx             ; Argument pointer
     enter   SHADOWSIZE, 0   
     alignstack        
@@ -104,8 +105,8 @@ taskEntry PROC
     ret
 taskEntry ENDP
 ;----------------------------------------------------------------------------
-; Should be used from MAIN context to add a new task to task dispatcher
-lowLevelEnqueueTask PROC
+; Should be used from MAIN context to add a new fiber to fiber dispatcher
+lowLevelEnqueueFiber PROC
     mov     rax, rbp
     enter   SHADOWSIZE, 0
     alignstack
@@ -117,12 +118,12 @@ lowLevelEnqueueTask PROC
     mov     rsp, r8
     sub     rsp, SHADOWSIZE ; THIS SPACE IN TASK STACK IS REALLY USED!
     alignstack
-    ; onTaskFinished is a kind of "completion" which is started at the final stage of task.
-    lea     r8, onTaskFinished
+    ; onFiberFinished is a kind of "completion" which is started at the final stage of fiber.
+    lea     r8, onFiberFinished
     push    r8
     push    rdx
     push    rcx
-    ; task entry code
+    ; fiber entry code
     lea     r8, taskEntry
     push    r8
     pushall
@@ -131,10 +132,10 @@ lowLevelEnqueueTask PROC
 
     leave                   ; Restore stack (rsp) & frame pointer (rbp)
     ret
-lowLevelEnqueueTask ENDP
+lowLevelEnqueueFiber ENDP
 ;----------------------------------------------------------------------------
 ; Get a new stack pointer from passed argument (rcx) and switch the stack
-; to return into a different task
+; to return into a different fiber
 lowLevelResume PROC
     mov     rsp, rcx ; here is a stack pointer address
     pop     rbp
@@ -142,8 +143,8 @@ lowLevelResume PROC
     ret
 lowLevelResume ENDP
 ;----------------------------------------------------------------------------
-; void yield() is used to switch task. Should be called from running task.
-; It is also used to run the initial task from main context
+; void yield() is used to switch fiber. Should be called from running fiber.
+; It is also used to run the initial fiber from main context
 yield PROC
     pushall
     enter   0, 0
@@ -151,7 +152,7 @@ yield PROC
     sub     rsp, SHADOWSIZE
     alignstack
     
-    call    taskManagerYield
+    call    fiberManagerYield
 
     leave                   ; Restore stack (rsp) & frame pointer (rbp)
     popall

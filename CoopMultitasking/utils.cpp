@@ -2,9 +2,11 @@
 #include <conio.h>
 #include <windows.h>
 
-#include "TaskManager.h"
+#include "FiberManager.h"
 
 void mySleep(uint32_t milliseconds) {
+	// Retrieve the number of milliseconds that have elapsed since the system was started.
+	// See https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64
 	ULONGLONG t = GetTickCount64();
 	while (GetTickCount64() < t + milliseconds) {
 		yield();
@@ -21,11 +23,12 @@ std::string readString()
 			char c = static_cast<char>(_getch_nolock());
 			if (c == '\r')
 			{
-				return result;
+				break;
 			}
 			_putch_nolock(c);
 			result += c;
 		}
 		yield();
 	}
+	return result;
 }
