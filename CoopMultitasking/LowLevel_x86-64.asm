@@ -18,6 +18,9 @@
 ; DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ;
+; We are Jedi and we don't need crutches! Will work with stack frames directly :)
+OPTION PROLOGUE:NONE
+OPTION EPILOGUE:NONE
 PUBLIC yield, lowLevelEnqueueFiber, lowLevelGetCurrentStack ; exported names
 EXTERN fiberManagerYield:PROC, onFiberFinished:PROC ;  these functions are defined in C-code
 ;----------------------------------------------------------------------------
@@ -87,6 +90,7 @@ popall  macro
 .code
 ;----------------------------------------------------------------------------
 ; Get current stack pointer to provide it to C++ code
+; extern "C" MemAddr* lowLevelGetCurrentStack();
 lowLevelGetCurrentStack PROC
     mov     rax, rsp
     ret
@@ -109,7 +113,8 @@ fiberEntry ENDP
 ; rcx - pointer to a fiber function
 ; rdx - void* data
 ; r8  - pointer to a function stack
-; returns  - address of a new host's stack pointer
+; returns  rax - address of a new host's stack pointer
+; extern "C" MemAddr* lowLevelEnqueueFiber(void(__stdcall*)(void*), void*, MemAddr*);
 lowLevelEnqueueFiber PROC
     enter   SHADOWSIZE, 0   ; it pushes RBP to current stack and sets RBP=RSP and then RSP -= SHADOWSIZE
     alignstack
@@ -136,6 +141,7 @@ lowLevelEnqueueFiber ENDP
 ; Get a new stack pointer from passed argument (rcx) and switch the stack
 ; to return into a different fiber
 ; rcx - target stack pointer
+; extern "C" void lowLevelResume(MemAddr*);
 lowLevelResume PROC
     mov     rsp, rcx
     ; extract previously saved non-volatile registers

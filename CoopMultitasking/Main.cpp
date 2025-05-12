@@ -18,80 +18,107 @@
 
 #include <iostream>
 #include <string>
+#include <windows.h>
+#include <processthreadsapi.h>
 
 #include "FiberManager.h"
 #include "utils.h"
 
 
-void __stdcall t5(void* data);
+void __stdcall f5(void* data);
 
-void __stdcall t1(void* data)
+void __stdcall f1(void* data)
 {
-	std::cout << "Start T1:";
+	std::cout << "Start F1:";
 	std::cout << static_cast<const char*>(data) << std::endl;
 	for (auto i = 0; i < 10; i++)
 	{
 		mySleep(1000);
-		std::cout << "T1:" << i << std::endl;
+		std::cout << "F1:" << i << std::endl;
 	}
-	std::cout << "End T1" << std::endl;
+	std::cout << "End F1" << std::endl;
 }
 
-void  __stdcall t2(void* data)
+void  __stdcall f2(void* data)
 {
-	std::cout << "Start T2:";
+	std::cout << "Start F2:";
 	std::cout << static_cast<const char*>(data) << std::endl;
 	for (auto i = 0; i < 10; i++)
 	{
 		mySleep(500);
-		std::cout << "T2:" << i << std::endl;
+		std::cout << "F2:" << i << std::endl;
 	}
-	std::cout << "End T2" << std::endl;
+	std::cout << "End F2" << std::endl;
 }
 
-void __stdcall t3(void* data)
+void __stdcall f3(void* data)
 {
-	std::cout << "Start T3:";
+	std::cout << "Start F3:";
 	std::cout << static_cast<const char*>(data) << std::endl;
 	for (auto i = 0; i < 10; i++)
 	{
 		mySleep(2000);
-		std::cout << "T3:" << i << std::endl;
+		std::cout << "F3:" << i << std::endl;
 	}
-	std::cout << "End T3" << std::endl;
+	std::cout << "End F3" << std::endl;
 }
 
-void __stdcall t4(void* data)
+void __stdcall f4(void* data)
 {
-	std::cout << "Start T4:";
+	std::cout << "Start F4:";
 	std::cout << static_cast<const char*>(data) << std::endl;
 	for (auto i = 0; i < 10; i++)
 	{
 		mySleep(100);
-		std::cout << "T4:" << i << std::endl;
+		std::cout << "F4:" << i << std::endl;
 	}
-	FiberManager::addFiber(t5, nullptr); // schedule a new fiber from another fiber
-	std::cout << "End T4" << std::endl;
+	FiberManager::addFiber(f5, nullptr); // schedule a new fiber from another fiber
+	//yield();
+	std::cout << "End F4" << std::endl;
 }
 
-void __stdcall t5(void* data) {
-	std::cout << "Start T5, Enter a text line and press Enter: ";
-	std::string s = readString();
+void __stdcall f5(void* data) {
+	std::cout << "Start F5, Enter a text line and press Enter: ";
+	std::string s = myReadString();
 	std::cout << std::endl;
 	std::cout << s << std::endl;
-	std::cout << "End T5" << std::endl;
+	std::cout << "End F5" << std::endl;
+}
+
+void __stdcall fiber1(void* data)
+{
+	for (auto i = 5; i >= 0; --i)
+	{
+		std::cout << "+Fiber1:" << ::GetCurrentThreadId() << " " << i << std::endl;
+		mySleep(300);
+	}
+}
+
+void __stdcall fiber2(void* data)
+{
+	for (auto i = 0; i < 10; i++)
+	{
+		std::cout << "-Fiber2:" << ::GetCurrentThreadId() << " " << i << std::endl;
+		mySleep(100);
+	}
 }
 
 int main()
 {
-	// Enqueue tasks
-	FiberManager::addFiber(t1, (void*)"Hello from task1");
-	FiberManager::addFiber(t2, (void*)"Hi there!");
-	FiberManager::addFiber(t3, (void*)"Fiber 3 is here");
-	FiberManager::addFiber(t4, (void*)"Fiber 4!!!!");
-
+	// register our fibers
+	FiberManager::addFiber(fiber1, nullptr);
+	FiberManager::addFiber(fiber2, nullptr);
 	// run
 	FiberManager::start();
+	// done
 	std::cout << "***Exit***" << std::endl;
 	return 0;
 }
+
+
+
+// Enqueue tasks
+//FiberManager::addFiber(f1, (void*)"Hello from task1");
+//FiberManager::addFiber(f2, (void*)"Hi there!");
+//FiberManager::addFiber(f3, (void*)"Fiber 3 is here");
+//FiberManager::addFiber(f4, (void*)"Fiber 4!!!!");

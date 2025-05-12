@@ -13,7 +13,7 @@ void mySleep(uint32_t milliseconds) {
 	}
 }
 
-std::string readString()
+std::string myReadString()
 {
 	std::string result;
 	for (;;)

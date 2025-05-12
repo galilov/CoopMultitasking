@@ -20,6 +20,9 @@
 ;
 .686
 .MODEL FLAT, C ; use cdecl convention
+; We are Jedi and we don't need crutches! Will work with stack frames directly :)
+OPTION PROLOGUE:NONE
+OPTION EPILOGUE:NONE
 
 ;----------------------------------------------------------------------------
 ; See https://www.agner.org/optimize/calling_conventions.pdf and
@@ -50,60 +53,55 @@ fiberManagerYield PROTO stackPointer:PTR    ; the function is defined in C-code
 onFiberFinished PROTO                       ; the function is defined in C-code
 ;----------------------------------------------------------------------------
 ; Get current stack pointer to provide it in C++ code
-OPTION PROLOGUE:NONE ; do not generate prologue
-OPTION EPILOGUE:NONE ; do not generate epilogue
+; extern "C" MemAddr* lowLevelGetCurrentStack();
 lowLevelGetCurrentStack PROC
     mov     eax, esp
     ret
 lowLevelGetCurrentStack ENDP
-OPTION PROLOGUE:PROLOGUEDEF ; use default prologue
-OPTION EPILOGUE:EPILOGUEDEF ; and epilogue
 ;----------------------------------------------------------------------------
 ; Should be used from MAIN context to add a new fiber to fiber dispatcher
 ; returns new stack pointer in eax
-lowLevelEnqueueFiber PROC pFunc:PTR, pData:PTR, pStack:PTR
+; extern "C" MemAddr* lowLevelEnqueueFiber(void(__stdcall*)(void*), void*, MemAddr*);
+lowLevelEnqueueFiber PROC   ;pFunc:PTR, pData:PTR, pStack:PTR
     ; we use an automcatically generated prologue which prepares the stack frame
-    mov     eax, pFunc
-    mov     ecx, pData
-    mov     esp, pStack ; prepare the top of stack for a new fiber
-    push    ecx         ; point to void* parameter will passed to the fiber via stack
-    ; onFiberFinished is handler which is called at the fiber completion stage
-    push    onFiberFinished
-    push    eax         ; pointer to a fiber function
+    push    ebp
+    mov     ebp, esp
+    mov     esp, [ebp + 10h] ; pStack - prepare the top of stack for a new fiber
+    push    [ebp + 0Ch]      ; pData - points to void* parameter will passed to the fiber via stack
+    push    onFiberFinished  ; the handler which is called at the fiber completion stage
+    push    [ebp + 08h]      ; pFunc = pointer to a fiber function
     ; allocate stack space to popping edi, esi, ebx, ebp in lowLevelResume()
     push    0
     push    0
     push    0
     push    0
-    mov     eax, esp    ; the result is the address of the new host's stack pointer in eax.
-    ret                 ; here we use the automatically generated epilogue
+    mov     eax, esp    ; the result is the address of the new fiber's stack pointer in eax.
+    mov     esp, ebp    ; restore esp
+    pop     ebp         ; restoew wbp
+    ret
 lowLevelEnqueueFiber ENDP
 ;----------------------------------------------------------------------------
 ; Get a new stack pointer from passed argument and switch the stack
 ; to return into a different fiber
-OPTION PROLOGUE:NONE
-OPTION EPILOGUE:NONE
-lowLevelResume PROC
-    mov     esp, [esp + 4] ; update esp with a new address taken from a parameter passed via stack
-    ; extract previously saved non-volatile registers
+; extern "C" void lowLevelResume(MemAddr*);
+lowLevelResume PROC     ; pSP:PTR
+    ; update esp with a new address taken from pSP parameter passed via stack
+    mov     esp, [esp + 4] ; pSP
+    ; extract previously saved non-volatile registers using the passed stack pointer
     popall
     ret
 lowLevelResume ENDP
-OPTION PROLOGUE:PROLOGUEDEF ; use default prologue
-OPTION EPILOGUE:EPILOGUEDEF ; and epilogue
 ;----------------------------------------------------------------------------
-; void yield() is used to switch fiber. Should be called from running fiber.
+; void yield() is used to switch the fiber. Should be called from running fiber.
 ; It is also used to run the initial fiber from main context
-OPTION PROLOGUE:NONE
-OPTION EPILOGUE:NONE
 yield PROC
     pushall
+    push    esp         ; pass a stack pointer to fiberManagerYield as parameter
     ; fiberManagerYield(sp) switches the execution to another fiber
-    invoke  fiberManagerYield, esp ; pass a stack pointer to fiberManagerYield as parameter
+    call    fiberManagerYield
+    add     esp, 4      ; release one stacked parameter
     popall
     ret
 yield ENDP
-OPTION PROLOGUE:PROLOGUEDEF ; use default prologue
-OPTION EPILOGUE:EPILOGUEDEF ; and epilogue
 ;----------------------------------------------------------------------------
 END
