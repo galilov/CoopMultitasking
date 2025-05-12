@@ -106,14 +106,14 @@ fiberEntry PROC
 fiberEntry ENDP
 ;----------------------------------------------------------------------------
 ; Should be used from MAIN context to add a new fiber to fiber dispatcher
-; returns new stack pointer in rax
+; rcx - pointer to a fiber function
+; rdx - void* data
+; r8  - pointer to a function stack
+; returns  - address of a new host's stack pointer
 lowLevelEnqueueFiber PROC
     enter   SHADOWSIZE, 0
+    alignstack
 
-    ; rcx - pointer to a fiber function
-    ; rdx - void* data
-    ; r8  - pointer to a function stack
-    ; returns  - address of a new host's stack pointer
     mov     rsp, r8         ; prepare the top of stack for a new fiber
     sub     rsp, SHADOWSIZE ; THIS SPACE IN TASK STACK IS REALLY USED!
     alignstack
