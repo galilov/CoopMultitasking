@@ -96,7 +96,7 @@ lowLevelGetCurrentStack ENDP
 fiberEntry PROC
     pop     rdx             ; Target fiber function address
     pop     rcx             ; Argument pointer
-    enter   SHADOWSIZE, 0   
+    enter   SHADOWSIZE, 0   ; it pushes RBP to current stack and sets RBP=RSP and then RSP -= SHADOWSIZE
     alignstack        
 
     call    rdx
@@ -111,7 +111,7 @@ fiberEntry ENDP
 ; r8  - pointer to a function stack
 ; returns  - address of a new host's stack pointer
 lowLevelEnqueueFiber PROC
-    enter   SHADOWSIZE, 0
+    enter   SHADOWSIZE, 0   ; it pushes RBP to current stack and sets RBP=RSP and then RSP -= SHADOWSIZE
     alignstack
 
     mov     rsp, r8         ; prepare the top of stack for a new fiber
@@ -135,8 +135,9 @@ lowLevelEnqueueFiber ENDP
 ;----------------------------------------------------------------------------
 ; Get a new stack pointer from passed argument (rcx) and switch the stack
 ; to return into a different fiber
+; rcx - target stack pointer
 lowLevelResume PROC
-    mov     rsp, rcx ; here is a stack pointer address
+    mov     rsp, rcx
     ; extract previously saved non-volatile registers
     pop     rbp
     popall
@@ -147,7 +148,7 @@ lowLevelResume ENDP
 ; It is also used to run the initial fiber from main context
 yield PROC
     pushall
-    enter   0, 0            ; it pushes RBP to current stack and set RBP=RSP
+    enter   0, 0            ; it pushes RBP to current stack and sets RBP=RSP
     mov     rcx, rsp        ; rcx is passed as parameter to fiberManagerYield
     sub     rsp, SHADOWSIZE
     alignstack
