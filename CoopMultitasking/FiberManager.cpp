@@ -35,7 +35,7 @@ namespace FiberManager {
 
 	Descriptors _fibers;
 	FiberDescritporPtr _finishedFiber;
-	Descriptors::iterator _it; // points to a current fiber
+	Descriptors::iterator _itFiber; // points to a current fiber
 
 	void addFiber(void(__stdcall* fiber)(void*), void* data)
 	{
@@ -45,7 +45,7 @@ namespace FiberManager {
 	void start()
 	{
 		_mainSp = nullptr;
-		_it = _fibers.begin();
+		_itFiber = _fibers.begin(); // Select the first fiber
 		// Run the first fiber from MAIN stack context.
 		// The stack will be switched to a local fiber-related stack.
 		yield(); // it returns back to start() when all the fibers will finish.
@@ -58,14 +58,14 @@ namespace FiberManager {
 void onFiberFinished()
 {
 	using namespace FiberManager;
-	// Currently completing fiber is ALWAYS the owner of current stack. But we must be sure!
-	assert((*_it)->isOwnerOfStack(lowLevelGetCurrentStack()));
+	// Currently, completing fiber is ALWAYS the owner of the current stack. But we mus
+	assert((*_itFiber)->isOwnerOfStack(lowLevelGetCurrentStack()));
 	// Avoid of auto-destruction the FiberDescriptor by saving it to
 	// finishedTask shared pointer. We need this stack to be allocated
 	// because it is current stack we are working with right now.
-	_finishedFiber.reset(_it->release());
+	_finishedFiber.reset(_itFiber->release());
 	// Remove completed fiber from the list.
-	_it = _fibers.erase(_it);
+	_itFiber = _fibers.erase(_itFiber);
 
 	MemAddr* sp;
 	if (_fibers.empty())
@@ -77,13 +77,14 @@ void onFiberFinished()
 	else
 	{
 		// Switch to the next fiber.
-		if (_it == _fibers.end())
+		if (_itFiber == _fibers.end())
 		{
-			_it = _fibers.begin();
+			_itFiber = _fibers.begin();
 		}
-		sp = (*_it)->getStackPointer();
+		sp = (*_itFiber)->getStackPointer();
 	}
-	lowLevelResume(sp); // it doesn't return back to onFiberFinished()
+	lowLevelResume(sp); // it doesn't return control!
+	assert(false);
 }
 
 // This function is called from ASM code yield().
@@ -92,29 +93,35 @@ void onFiberFinished()
 void fiberManagerYield(MemAddr* sp)
 {
 	using namespace FiberManager;
-	if (_fibers.size() < 2) // One or none fibers?
+	if (_fibers.empty()) // No fibers in the list?
 	{
-		// We still use MAIN app stack.
+		// No fibers to switch to, just return back to yield().
 		return;
 	}
-	if ((*_it)->isOwnerOfStack(sp))
+	// Does the current fiber own the stack pointed by sp?
+	if ((*_itFiber)->isOwnerOfStack(sp))
 	{
-		(*_it)->saveStackPointer(sp);
-		++_it;
-		if (_it == _fibers.end())
+		// Save current stack pointer to the fiber descriptor
+		(*_itFiber)->saveStackPointer(sp);
+		if (_fibers.size() > 1)
 		{
-			_it = _fibers.begin();
+			// Select the next fiber.
+			if (++_itFiber == _fibers.end()) // Is the last fiber?
+			{
+				// Go to first.
+				_itFiber = _fibers.begin();
+			}
 		}
 	}
 	else
 	{
-		// The execution goes here ONE time when yield() is called from
-		// MAIN stack context. We have the only such place in start() function.
+		// Execution goes here ONCE, when yield() is first called from the
+		// MAIN stack context. We have only one such place in the start() function.
 		assert(_mainSp == nullptr);
 		// Save MAIN stack pointer to use it in the final completion.
 		_mainSp = sp;
 	}
-
-	lowLevelResume((*_it)->getStackPointer()); // switch to the selected fiber.
-	assert(false); // the execution should not go here!
+	// Switch to the selected fiber using its own stack.
+	lowLevelResume((*_itFiber)->getStackPointer());
+	assert(false); // The execution must never go here!
 }

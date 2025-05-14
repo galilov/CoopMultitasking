@@ -99,11 +99,11 @@ lowLevelGetCurrentStack ENDP
 ; Fiber entry code is used to prepare an input parameter in RCX
 fiberEntry PROC
     pop     rdx             ; Target fiber function address
-    pop     rcx             ; Argument pointer
+    pop     rcx             ; Fibder argument pointer
     enter   SHADOWSIZE, 0   ; it pushes RBP to current stack and sets RBP=RSP and then RSP -= SHADOWSIZE
     alignstack        
 
-    call    rdx
+    call    rdx             ; call fiber entry point
 
     leave                   ; Restore stack (rsp) & frame pointer (rbp)
     ret
@@ -116,25 +116,25 @@ fiberEntry ENDP
 ; returns  rax - address of a new host's stack pointer
 ; extern "C" MemAddr* lowLevelEnqueueFiber(void(__stdcall*)(void*), void*, MemAddr*);
 lowLevelEnqueueFiber PROC
-    enter   SHADOWSIZE, 0   ; it pushes RBP to current stack and sets RBP=RSP and then RSP -= SHADOWSIZE
-    alignstack
+    push    rbp
+    mov     rbp, rsp
 
     mov     rsp, r8         ; prepare the top of stack for a new fiber
-    sub     rsp, SHADOWSIZE ; THIS SPACE IN TASK STACK IS REALLY USED!
+    sub     rsp, SHADOWSIZE ; THIS SPACE IN TASK STACK IS REQUIRED BY ABI!
     alignstack
     ; onFiberFinished is handler which is called at the fiber completion stage.
-    lea     r8, onFiberFinished
+    mov     r8, onFiberFinished
     push    r8
     push    rdx
     push    rcx
-    ; prepare fiber entry proxy function
-    lea     r8, fiberEntry
+    mov     r8, fiberEntry
     push    r8
     pushall                 ; allocate stack space to popping non-volatile registers in lowLevelResume() 
     push    0               ; 0 is a value for RBP when it will be popped in lowLevelResume().
     mov     rax, rsp
 
-    leave                   ; Restore stack (rsp) & frame pointer (rbp)
+    mov     rsp, rbp
+    pop     rbp
     ret
 lowLevelEnqueueFiber ENDP
 ;----------------------------------------------------------------------------

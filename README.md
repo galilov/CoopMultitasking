@@ -3,72 +3,60 @@ Video (russian): https://youtu.be/cEGOAZtpfYA
 
 Example:
 ```c++
-        #include <iostream>
-        #include "TaskManager.h"
+#include <iostream>
+#include <string>
+#include <windows.h>
+#include <processthreadsapi.h>
 
-        void  __stdcall t1(void* data)
-        {
-                std::cout << "Start T1" << std::endl;
-                std::cout << static_cast<const char*>(data) << std::endl;
-                for (auto i = 0; i < 6; i++)
-                {
-                        std::cout << "In T1 " << i << std::endl;
-                        yield();
-                }
-                std::cout << "End T1" << std::endl;
-        }
+#include "FiberManager.h"
+#include "utils.h"
 
-        void  __stdcall t2(void* data)
-        {
-                std::cout << "Start T2" << std::endl;
-                std::cout << static_cast<const char*>(data) << std::endl;
-                for (auto i = 0; i < 5; i++)
-                {
-                        std::cout << "In T2 " << i << std::endl;
-                        yield();
-                }
-                std::cout << "End T2" << std::endl;
-        }
+void __stdcall fiber1(void* data)
+{
+	for (auto i = 5; i >= 0; --i)
+	{
+		std::cout << "+Fiber1:" << ::GetCurrentThreadId() << " " << i << std::endl;
+		mySleep(300);
+	}
+}
 
-        void  __stdcall t3(void* data)
-        {
-                std::cout << "Start T3" << std::endl;
-                yield();
-                std::cout << static_cast<const char*>(data) << std::endl;
-                std::cout << "End T3" << std::endl;
-        }
-        
-        int main()
-        {
-                // Enqueue tasks
-                TaskManager::addTask(t1, (void*)"Hello from task1");
-                TaskManager::addTask(t2, (void*)"Hi there!");
-                TaskManager::addTask(t3, (void*)"Task 3 is here");
-                // run
-                TaskManager::start();
-                return 0;
-        }
+void __stdcall fiber2(void* data)
+{
+	for (auto i = 0; i < 10; i++)
+	{
+		std::cout << "-Fiber2:" << ::GetCurrentThreadId() << " " << i << std::endl;
+		mySleep(100);
+	}
+}
+int main()
+{
+	// register our fibers
+	FiberManager::addFiber(fiber1, nullptr);
+	FiberManager::addFiber(fiber2, nullptr);
+	// run
+	FiberManager::start();
+	// done
+	std::cout << "***Exit***" << std::endl;
+	return 0;
+}
 ```
 ## Output
 ```
-Start T1
-Hello from task1
-In T1 0
-Start T2
-Hi there!
-In T2 0
-Start T3
-In T1 1
-In T2 1
-Task 3 is here
-End T3
-In T1 2
-In T2 2
-In T1 3
-In T2 3
-In T1 4
-In T2 4
-In T1 5
-End T2
-End T1
++Fiber1:10140 5
+-Fiber2:10140 0
+-Fiber2:10140 1
+-Fiber2:10140 2
++Fiber1:10140 4
+-Fiber2:10140 3
+-Fiber2:10140 4
+-Fiber2:10140 5
++Fiber1:10140 3
+-Fiber2:10140 6
++Fiber1:10140 2
+-Fiber2:10140 7
+-Fiber2:10140 8
+-Fiber2:10140 9
++Fiber1:10140 1
++Fiber1:10140 0
+***Exit***
 ```

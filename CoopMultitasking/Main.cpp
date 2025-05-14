@@ -57,7 +57,7 @@ void __stdcall f3(void* data)
 	std::cout << static_cast<const char*>(data) << std::endl;
 	for (auto i = 0; i < 10; i++)
 	{
-		mySleep(2000);
+		mySleep(1500);
 		std::cout << "F3:" << i << std::endl;
 	}
 	std::cout << "End F3" << std::endl;
@@ -85,29 +85,13 @@ void __stdcall f5(void* data) {
 	std::cout << "End F5" << std::endl;
 }
 
-void __stdcall fiber1(void* data)
-{
-	for (auto i = 5; i >= 0; --i)
-	{
-		std::cout << "+Fiber1:" << ::GetCurrentThreadId() << " " << i << std::endl;
-		mySleep(300);
-	}
-}
-
-void __stdcall fiber2(void* data)
-{
-	for (auto i = 0; i < 10; i++)
-	{
-		std::cout << "-Fiber2:" << ::GetCurrentThreadId() << " " << i << std::endl;
-		mySleep(100);
-	}
-}
-
 int main()
 {
-	// register our fibers
-	FiberManager::addFiber(fiber1, nullptr);
-	FiberManager::addFiber(fiber2, nullptr);
+	// Enqueue fibers
+	FiberManager::addFiber(f1, (void*)"Hello from fiber");
+	FiberManager::addFiber(f2, (void*)"Hi there!");
+	FiberManager::addFiber(f3, (void*)"Fiber 3 is here");
+	FiberManager::addFiber(f4, (void*)"Fiber 4!!!!");
 	// run
 	FiberManager::start();
 	// done

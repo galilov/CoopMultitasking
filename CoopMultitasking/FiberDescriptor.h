@@ -24,9 +24,6 @@
 
 extern "C" void yield(); // defined in .asm
 
-class FiberDescriptor;
-
-typedef std::shared_ptr<FiberDescriptor> TaskDescriptorPtr;
 
 #ifdef _M_X64
 typedef uint64_t MemAddr;
@@ -36,13 +33,16 @@ typedef uint32_t MemAddr;
 class FiberDescriptor
 {
 public:
+	static constexpr size_t nStackEntries = 16384;
 	FiberDescriptor(const FiberDescriptor&) = delete;
 	FiberDescriptor& operator=(const FiberDescriptor&) = delete;
 	FiberDescriptor(void(__stdcall* fiber)(void*), void* data);
-	bool isOwnerOfStack(const MemAddr* sp) { return (sp >= &_stack[0]) && (sp < &_stack[0] + _stack.size()); }
+	bool isOwnerOfStack(const MemAddr* sp) { return (sp >= &_stack[0]) && (sp < &_stack[0] + nStackEntries); }
 	void saveStackPointer(MemAddr* sp) { _stackPointer = sp; }
 	MemAddr* getStackPointer() const { return _stackPointer; }
 private:
-	std::vector<MemAddr> _stack;
+	MemAddr _stack[nStackEntries];
 	MemAddr* _stackPointer;
 };
+
+typedef std::shared_ptr<FiberDescriptor> TaskDescriptorPtr;

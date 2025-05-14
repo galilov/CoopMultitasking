@@ -59,11 +59,10 @@ lowLevelGetCurrentStack PROC
     ret
 lowLevelGetCurrentStack ENDP
 ;----------------------------------------------------------------------------
-; Should be used from MAIN context to add a new fiber to fiber dispatcher
+; Should be used from MAIN context to add a new fiber to fiber dispatcher.
 ; returns new stack pointer in eax
 ; extern "C" MemAddr* lowLevelEnqueueFiber(void(__stdcall*)(void*), void*, MemAddr*);
-lowLevelEnqueueFiber PROC   ;pFunc:PTR, pData:PTR, pStack:PTR
-    ; we use an automcatically generated prologue which prepares the stack frame
+lowLevelEnqueueFiber PROC    ;pFunc:PTR, pData:PTR, pStack:PTR
     push    ebp
     mov     ebp, esp
     mov     esp, [ebp + 10h] ; pStack - prepare the top of stack for a new fiber
@@ -77,7 +76,7 @@ lowLevelEnqueueFiber PROC   ;pFunc:PTR, pData:PTR, pStack:PTR
     push    0
     mov     eax, esp    ; the result is the address of the new fiber's stack pointer in eax.
     mov     esp, ebp    ; restore esp
-    pop     ebp         ; restoew wbp
+    pop     ebp         ; restore ebp
     ret
 lowLevelEnqueueFiber ENDP
 ;----------------------------------------------------------------------------
@@ -95,12 +94,12 @@ lowLevelResume ENDP
 ; void yield() is used to switch the fiber. Should be called from running fiber.
 ; It is also used to run the initial fiber from main context
 yield PROC
-    pushall
-    push    esp         ; pass a stack pointer to fiberManagerYield as parameter
+    pushall             ; save non-volatile registers
+    push    esp         ; pass a stack pointer to fiberManagerYield as argument
     ; fiberManagerYield(sp) switches the execution to another fiber
     call    fiberManagerYield
-    add     esp, 4      ; release one stacked parameter
-    popall
+    add     esp, 4      ; release one stacked parameter passed to fiberManagerYield
+    popall              ; restore non-volatile registers
     ret
 yield ENDP
 ;----------------------------------------------------------------------------

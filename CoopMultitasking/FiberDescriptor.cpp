@@ -21,13 +21,14 @@ extern "C" MemAddr* lowLevelEnqueueFiber(void(__stdcall*)(void*), void*, MemAddr
 
 FiberDescriptor::FiberDescriptor(void(__stdcall* fiber)(void*), void* data)
 {
-	const size_t nStackEntries = 16384;
-	// allocate nStackEntries of MemAddr for a local fiber stack 
-	_stack.resize(nStackEntries);
 	// fill the stack with pre-defined pattern
 	for (auto& elem : _stack)
 	{
-		elem = static_cast<MemAddr>(0xdeadbeeff00dULL); // DeadBeefFood for debug
+#ifdef _M_X64
+		elem = 0xdeadbeeff00da011ULL; // DeadBeefFoodA0ll for debug
+#else
+		elem = 0xdeadbeefU; // DeadBeef for debug
+#endif
 	}
-	_stackPointer = lowLevelEnqueueFiber(fiber, data, &_stack[0] + _stack.size());
+	_stackPointer = lowLevelEnqueueFiber(fiber, data, &_stack[0] + nStackEntries);
 }
